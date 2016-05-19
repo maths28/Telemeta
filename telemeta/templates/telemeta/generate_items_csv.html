@@ -1,0 +1,32 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+{% block breadcrumbs %}
+    <ul class="breadcrumb">
+        <li>
+            <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+            <span class="divider">&raquo;</span>
+        </li>
+        <li>
+            <a href="{% url 'admin:app_list' app_label="telemeta" %}">Telemeta</a>
+            <span class="divider">&raquo;</span>
+        </li>
+        <li>
+             <a href="{% url "admin:telemeta_mediaitem_changelist" %}"> Items</a>
+            <span class="divider">&raquo;</span>
+        </li>
+        <li class="active">
+            Modifications items par CSV
+        </li>
+    </ul>
+{% endblock %}
+
+{% block content_title_value %}Modifications items par CSV{% endblock %}
+
+{% block content %}
+    <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <h1>{{ form.fichier.label }}</h1>
+        <p>{{ form.fichier }}</p>
+    <input type="submit">
+    </form>
+{% endblock %}

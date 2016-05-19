@@ -22,6 +22,7 @@
 
 
 from telemeta.views.core import *
+from telemeta.forms.generate_item_form import GenerItemForm
 
 class AdminView(object):
     """Provide Admin web UI methods"""
@@ -179,4 +180,11 @@ class AdminView(object):
             from_record.delete()
 
         return self.edit_enumeration(request, enumeration_id)
+
+
+    @method_decorator(permission_required('is_superuser'))
+    def generate_items_csv(self, request):
+        title = "Modification par CSV"
+        form = GenerItemForm()
+        return render(request, "telemeta/generate_items_csv.html", locals())
 
