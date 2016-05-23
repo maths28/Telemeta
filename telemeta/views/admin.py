@@ -185,6 +185,8 @@ class AdminView(object):
     @method_decorator(permission_required('is_superuser'))
     def generate_items_csv(self, request):
         title = "Modification par CSV"
-        form = GenerItemForm()
+        form = GenerItemForm(request.POST, request.FILES)
+        if request.method == "POST" and form.is_valid():
+            name = "OK"
         return render(request, "telemeta/generate_items_csv.html", locals())
 

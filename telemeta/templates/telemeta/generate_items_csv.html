@@ -29,4 +29,8 @@
         <p>{{ form.fichier }}</p>
     <input type="submit">
     </form>
+    {% if name %}
+        {{ name }}
+    {% endif %}
+    <p>{{ form.non_field_errors }}</p>
 {% endblock %}
