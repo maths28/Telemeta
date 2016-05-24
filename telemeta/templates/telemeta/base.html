@@ -163,7 +163,7 @@
                             <input name="next" type="hidden" value="{% url 'telemeta-home' %}"/>
                             <select name="language" style="color:#6a0307">
                                 {% for lang in LANGUAGES %}
-                                    <option value="{{ lang.0 }}">{{ lang.1 }}</option>
+                                    <option value="{{ lang.0 }}" {% if lang.0 == LANGUAGE_CODE %} selected {% endif %}>{{ lang.1 }}</option>
                                 {% endfor %}
                             </select>
                             <input type="submit" value="Ok"/>
