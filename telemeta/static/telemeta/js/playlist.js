@@ -45,6 +45,9 @@ var playlistUtils = {
     id: '', // ID var: used to edit playlist
     title: '',
     description: '',
+    state: 'stop', // state var: to state play or pause glyphicon
+    playing: '', // playing var: used to know if an audio is already playing or not
+    audio: new Audio(),
 
     addPlaylist: function (name, id) {
         this.playlists.push({
@@ -88,9 +91,37 @@ var playlistUtils = {
         this.id = ""; // init ID
     },
 
-    loadSong: function(resElem){
-        var audio = new Audio(resElem);
-        audio.play();
+    loadAudio: function(resElem){
+        this.audio.src = resElem;
+        this.audio.play();
+    },
+
+    stopAudio: function(){
+        this.audio.pause();
+    },
+
+    changeGlyph: function(resElem){
+       if(this.playing === '' || this.playing === resElem){
+           if(this.state === 'stop'){
+               this.state = 'play';
+               document.getElementById(resElem).setAttribute("class", "glyphicon glyphicon-pause");
+               playlistUtils.loadAudio(resElem);
+               this.playing = resElem;
+           }
+           else if(this.state === 'play'){
+               this.state = 'stop';
+               document.getElementById(resElem).setAttribute("class", "glyphicon glyphicon-play");
+               playlistUtils.stopAudio();
+               this.playing = '';
+           }
+       }
+       else{
+           playlistUtils.stopAudio();
+           this.state = 'stop';
+           document.getElementById(this.playing).setAttribute("class", "glyphicon glyphicon-play");
+           this.playing = '';
+           playlistUtils.changeGlyph(resElem);
+       }
     },
 
     /**
