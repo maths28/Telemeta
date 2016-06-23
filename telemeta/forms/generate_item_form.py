@@ -1,9 +1,10 @@
 from django.forms import Form, FileField, ValidationError, ChoiceField,\
-    CharField, BooleanField, ModelForm, TextInput
+    CharField, BooleanField, TextInput
 import os
 import csv
 from telemeta.models import MediaItem
 from django.forms.models import modelform_factory
+from telemeta.forms import MediaItemForm
 
 class GenerItemForm(Form):
      file = FileField(label='Selectionnez votre file CSV')
@@ -41,7 +42,28 @@ class AboutCSVFileForm(Form):
     filename = CharField(required=True)
     ignore_first_line = BooleanField(required=False, label='Ignore the first line ?')
 
+def get_object_or_new(attr, value):
+    criteria = {attr: value}
+    import sys
+    print(criteria)
+    sys.stdout.flush()
+    try:
+        object = MediaItem.objects.get(**criteria)
+    except MediaItem.DoesNotExist:
+        object = None
+    return object
 
-def generate_correction_form(id_attr):
-    return modelform_factory(MediaItem, fields=(id_attr, "code"),
-                      widgets={id_attr: TextInput(attrs={'readonly': 'readonly'})})
+def generate_correction_form(fields, id_attr, value_id):
+    object = get_object_or_new(id_attr, value_id)
+    has_id = False
+    if id_attr+"_id" in fields:
+        fields.remove(id_attr+"_id")
+        has_id = True
+    if object is None or has_id:
+        CorrectionForm = modelform_factory(model=MediaItem, form= MediaItemForm,
+                    fields=fields)
+    else:
+        CorrectionForm = modelform_factory(model=MediaItem, form=MediaItemForm,
+                        fields=fields, widgets={id_attr: TextInput(attrs={'readonly': 'readonly'})})
+    return CorrectionForm, object
+
