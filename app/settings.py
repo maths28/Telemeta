@@ -58,6 +58,7 @@ LANGUAGES = [ ('fr', 'French'),
               ('zh_CN', 'Simplified Chinese'),
               ('ar_TN', 'Arabic'),
               ('pt_BR', 'Portuguese'),
+              ('es', 'Spanish')
 ]
 
 SITE_ID = 1
@@ -207,7 +208,7 @@ TELEMETA_STREAMING_FORMATS = ('mp3', 'ogg')
 TELEMETA_DOWNLOAD_FORMATS = ('wav', 'mp3', 'ogg', 'flac')
 TELEMETA_PUBLIC_ACCESS_PERIOD = 51
 
-TELEMETA_STRICT_CODE = False
+TELEMETA_STRICT_CODE = True
 COLLECTION_PUBLISHED_CODE_REGEX = '[A-Za-z0-9._-]*'
 COLLECTION_UNPUBLISHED_CODE_REGEX = '[A-Za-z0-9._-]*'
 ITEM_PUBLISHED_CODE_REGEX = COLLECTION_PUBLISHED_CODE_REGEX + ''
