@@ -206,6 +206,11 @@
                     {% if resource.element.recorded_to_date and not resource.element.recorded_to_date.year|equals:resource.element.recorded_from_date.year %}
                     - {{ resource.element.recorded_to_date.year }}
                     {% endif %}
+                    {% elif resource.element.recorded_from_year %}
+                    {{ resource.element.recorded_from_year }}
+                    {% if resource.element.recorded_to_year and not resource.element.recorded_to_year|equals:resource.element.recorded_from_year %}
+                    - {{ resource.element.recorded_to_year }}
+                    {% endif %}
                     {% endif %}
                 </td>
                 <td align="center" style="vertical-align:middle;">

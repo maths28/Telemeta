@@ -3,6 +3,8 @@ from telemeta.models import *
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
+from django.conf.urls import url
+from telemeta.views.admin import AdminView
 
 admin.site.unregister(User)
 
@@ -50,6 +52,17 @@ class MediaItemAdmin(admin.ModelAdmin):
                 MediaItemRelatedInline,
                 MediaItemTranscodedInline,
                 MediaItemMarkerInline]
+
+    def get_urls(self):
+        urls = super(MediaItemAdmin, self).get_urls()
+        my_urls = [
+            url(r'^gener_csv/$', AdminView().generate_items_csv, name="telemeta-items-csv"),
+            url(r'^gener_csv/apply/$', AdminView().valid_attr_form, name="telemeta-items-csv-apply"),
+            url(r'^gener_csv/progress/(?P<task_id>[A-Za-z0-9-]+)/$', AdminView().progress_task, name="telemeta-items-csv-progress"),
+            url(r'^gener_csv/correction/$', AdminView().get_correction_form, name="telemeta-items-csv-correction"),
+            url(r'^gener_csv/correction/apply/$', AdminView().apply_correction, name="telemeta-items-csv-correction-apply"),
+        ]
+        return my_urls + urls
 
 class MediaPartAdmin(admin.ModelAdmin):
     search_fields = ['title', 'item__code']

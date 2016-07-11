@@ -159,7 +159,6 @@ $(document).ready(function () {
         }
     });
 
-
     $('#dialog').dialog({
         autoOpen: false,
         width: '40%',

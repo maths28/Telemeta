@@ -209,7 +209,7 @@ TELEMETA_STREAMING_FORMATS = ('mp3', 'ogg')
 TELEMETA_DOWNLOAD_FORMATS = ('wav', 'mp3', 'ogg', 'flac')
 TELEMETA_PUBLIC_ACCESS_PERIOD = 51
 
-TELEMETA_STRICT_CODE = False
+TELEMETA_STRICT_CODE = True
 COLLECTION_PUBLISHED_CODE_REGEX = '[A-Za-z0-9._-]*'
 COLLECTION_UNPUBLISHED_CODE_REGEX = '[A-Za-z0-9._-]*'
 ITEM_PUBLISHED_CODE_REGEX = COLLECTION_PUBLISHED_CODE_REGEX + ''
@@ -295,7 +295,8 @@ LOGGING = {
 }
 
 BROKER_URL = env('BROKER_URL')
-CELERY_IMPORTS = ("timeside.server.tasks",)
+
+CELERY_IMPORTS = ("timeside.server.tasks", "telemeta.util.tasks",)
 CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -324,7 +325,7 @@ HAYSTACK_CONNECTIONS = {
         'INLUDE_SPELLING': True,
         'EXCLUDED_INDEXES': ['telemeta.search_indexes.MediaItemIndex',
                              'telemeta.search_indexes.MediaCollectionIndex',
-                             'telemeta.search_indexes.MediaCorpusIndex',
+                            'telemeta.search_indexes.MediaCorpusIndex',
                              'telemeta.search_indexes.MediaFondsIndex'
                              ]
     },

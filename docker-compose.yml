@@ -73,6 +73,7 @@ worker:
   links:
     - broker
     - db
+    - search
 
 nginx:
   image: nginx
