@@ -29,6 +29,14 @@ class CustomElasticBackend(ElasticsearchSearchBackend):
             {"type": "custom", "tokenizer": "keyword", "filter": ["lowercase"]}
         eb.setup()
 
+
+    def build_search_kwargs(self, *args, **kwargs):
+        val = super(CustomElasticBackend, self).build_search_kwargs(*args, **kwargs)
+        import sys
+        #print(val)
+        sys.stdout.flush()
+        return val
+
 class CustomElasticSearchQuery(ElasticsearchSearchQuery):
 
     #Custom search query for remove all punctuations characters and

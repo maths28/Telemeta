@@ -29,6 +29,7 @@ from telemeta.models.query import *
 from telemeta.models.identifier import *
 from telemeta.models.resource import *
 from telemeta.models.enum import *
+from telemeta.models.collection import MediaCollection
 
 item_published_code_regex = getattr(settings, 'ITEM_PUBLISHED_CODE_REGEX', '[A-Za-z0-9._-]*')
 item_unpublished_code_regex = getattr(settings, 'ITEM_UNPUBLISHED_CODE_REGEX', '[A-Za-z0-9._-]*')
@@ -165,9 +166,12 @@ class MediaItem(MediaResource):
 
     def clean(self):
         if strict_code:
-            if self.code and not self.is_valid_code(self.code):
-                raise ValidationError("%s is not a valid item code for collection %s"
-                                            % (self.code, self.collection.code))
+            try:
+                if self.code and not self.is_valid_code(self.code):
+                    raise ValidationError({"code": ["%s is not a valid item code for collection %s"
+                                                    % (self.code, self.collection.code), ]})
+            except MediaCollection.DoesNotExist:
+                pass
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
         super(MediaItem, self).save(force_insert, force_update, *args, **kwargs)

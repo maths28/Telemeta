@@ -30,7 +30,6 @@ import csv
 from telemeta.util.tasks import *
 from django.http import HttpResponse
 import simplejson as json
-from django.db.models import Q
 
 class AdminView(object):
     """Provide Admin web UI methods"""
@@ -254,28 +253,41 @@ class AdminView(object):
 
     def get_correction_form(self, request):
          if request.method == "POST" and "item" in request.POST.keys() and\
-             "attribute" in request.POST.keys():
+             "attribute" in request.POST.keys() and "val_csv" in request.POST.keys():
              attr = request.POST.get('attribute')
              item = request.POST.get('item')
-             qs = MediaItem.objects.filter(Q((attr, item)))
-             if len(qs) == 1:
-                 ItemCodeCorrectionForm = generate_correction_form(attr)
-                 form = ItemCodeCorrectionForm(instance=qs[0])
-                 return HttpResponse(form.as_p())
+             val_csv = json.loads(request.POST.get('val_csv', ''))
+             #qs = MediaItem.objects.filter(Q((attr, item)))
+             #if len(qs) == 1:
+             CorrectionForm, obj = generate_correction_form(val_csv.keys(), attr, item)
+             if not obj is None:
+                 form = CorrectionForm(initial=val_csv, instance=obj)
+                 actual_values = [getattr(getattr(obj, f), get_field_name(f))
+                                  if is_foreign(f) and not getattr(obj, f) is None else getattr(obj, f) or "aucune"
+                                  for f in val_csv.keys() if hasattr(obj, f)]
+
+             else:
+                 form = CorrectionForm(initial=val_csv)
+                 actual_values = []
+             return HttpResponse(json.dumps({'form': form.as_p(), 'actual_values': actual_values}), content_type='application/json')
          return HttpResponse(status=404)
 
 
     def apply_correction(self, request):
         if request.method == "POST":
             attr = request.POST.get('attribute')
-            item = request.POST.get(attr)
-            ItemCodeCorrection = generate_correction_form(attr)
-            qs = MediaItem.objects.filter(Q((attr, item)))
-            if len(qs) == 1:
-                form = ItemCodeCorrection(request.POST, instance=qs[0])
-                if form.is_valid():
-                    form.save()
-                    return HttpResponse(status=201)
-                else:
-                    return HttpResponse(form.as_p())
+            item = request.POST.get(attr+"_id", request.POST.get(attr))
+            attr_list = request.POST.copy()
+            del attr_list['csrfmiddlewaretoken']
+            del attr_list['attribute']
+            CorrectionForm, obj = generate_correction_form(attr_list.keys(), attr, item)
+            if not obj is None:
+                form = CorrectionForm(attr_list, instance=obj)
+            else:
+                form = CorrectionForm(attr_list)
+            if form.is_valid():
+                form.save()
+                return HttpResponse(status=201)
+            else:
+                return HttpResponse(form.as_p())
         return HttpResponse(status=404)
