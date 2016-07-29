@@ -200,9 +200,6 @@ class AdminView(object):
                 file = form.cleaned_data["file"]
                 self.upload_file(file)
                 filename = file.name
-                attr_form_group = self.generate_attr_form(filename)
-                formset = attr_form_group()
-                file_form = AboutCSVFileForm(initial={'filename': filename})
         else:
             form = GenerItemForm()
         return render(request, "telemeta/generate_items_csv.html", locals())
@@ -219,75 +216,14 @@ class AdminView(object):
         if filename is not None:
             os.remove("%sgen_csv/%s" % (settings.MEDIA_ROOT, filename))
 
-    def generate_attr_form(self, file):
-        file = open("%sgen_csv/%s" % (settings.MEDIA_ROOT, file), "r")
-        file_csv = csv.reader(file)
-        length = len(next(file_csv))
-        file.close()
-        return formset_factory(AttributeItemForm, extra=length)
-
-    def valid_attr_form(self, request):
-        formset = formset_factory(AttributeItemForm)
+    def apply_csv(self, request):
         if request.method == "POST":
-            form = formset(request.POST)
-            file_form = AboutCSVFileForm(request.POST)
-            if form.is_valid() and file_form.is_valid():
-                list_attr = []
-                for f in enumerate(form):
-                    attr = f[1].cleaned_data['attribute']
-                    if f[0] != 0 and attr not in list_attr:
-                         list_attr.append(attr)
-                if len(list_attr) != form.total_form_count()-1:
-                    return HttpResponse(status=400)
-                list_attr.insert(0, form[0].cleaned_data['attribute'])
-                filename = file_form.cleaned_data['filename']
-                ignore = file_form.cleaned_data['ignore_first_line']
-                task = apply_generate_item.delay(list_attr, filename, ignore)
-                task_id = task.id
-                return HttpResponse(json.dumps({'task_id': task_id}), content_type='application/json')
+            filename = request.POST.get('filename')
+            task = apply_generate_item.delay(filename)
+            task_id = task.id
+            return HttpResponse(json.dumps({'task_id': task_id}), content_type='application/json')
         return HttpResponse(status=404)
 
     def progress_task(self, request, task_id):
         result = get_task_status(task_id)
         return HttpResponse(json.dumps(result), content_type='application/json')
-
-    def get_correction_form(self, request):
-         if request.method == "POST" and "item" in request.POST.keys() and\
-             "attribute" in request.POST.keys() and "val_csv" in request.POST.keys():
-             attr = request.POST.get('attribute')
-             item = request.POST.get('item')
-             val_csv = json.loads(request.POST.get('val_csv', ''))
-             #qs = MediaItem.objects.filter(Q((attr, item)))
-             #if len(qs) == 1:
-             CorrectionForm, obj = generate_correction_form(val_csv.keys(), attr, item)
-             if not obj is None:
-                 form = CorrectionForm(initial=val_csv, instance=obj)
-                 actual_values = [getattr(getattr(obj, f), get_field_name(f))
-                                  if is_foreign(f) and not getattr(obj, f) is None else getattr(obj, f) or "aucune"
-                                  for f in val_csv.keys() if hasattr(obj, f)]
-
-             else:
-                 form = CorrectionForm(initial=val_csv)
-                 actual_values = []
-             return HttpResponse(json.dumps({'form': form.as_p(), 'actual_values': actual_values}), content_type='application/json')
-         return HttpResponse(status=404)
-
-
-    def apply_correction(self, request):
-        if request.method == "POST":
-            attr = request.POST.get('attribute')
-            item = request.POST.get(attr+"_id", request.POST.get(attr))
-            attr_list = request.POST.copy()
-            del attr_list['csrfmiddlewaretoken']
-            del attr_list['attribute']
-            CorrectionForm, obj = generate_correction_form(attr_list.keys(), attr, item)
-            if not obj is None:
-                form = CorrectionForm(attr_list, instance=obj)
-            else:
-                form = CorrectionForm(attr_list)
-            if form.is_valid():
-                form.save()
-                return HttpResponse(status=201)
-            else:
-                return HttpResponse(form.as_p())
-        return HttpResponse(status=404)

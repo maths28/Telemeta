@@ -57,10 +57,8 @@ class MediaItemAdmin(admin.ModelAdmin):
         urls = super(MediaItemAdmin, self).get_urls()
         my_urls = [
             url(r'^gener_csv/$', AdminView().generate_items_csv, name="telemeta-items-csv"),
-            url(r'^gener_csv/apply/$', AdminView().valid_attr_form, name="telemeta-items-csv-apply"),
+            url(r'^gener_csv/apply/$', AdminView().apply_csv, name="telemeta-items-csv-apply"),
             url(r'^gener_csv/progress/(?P<task_id>[A-Za-z0-9-]+)/$', AdminView().progress_task, name="telemeta-items-csv-progress"),
-            url(r'^gener_csv/correction/$', AdminView().get_correction_form, name="telemeta-items-csv-correction"),
-            url(r'^gener_csv/correction/apply/$', AdminView().apply_correction, name="telemeta-items-csv-correction-apply"),
         ]
         return my_urls + urls
 

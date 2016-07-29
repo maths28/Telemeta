@@ -4,10 +4,9 @@
 <style>
 
 #error{
-    height: 200px;
-    overflow: scroll;
     border-radius: 10px;
     background-color: white;
+    list-style: none;
 }
 
 .old_val:hover{
@@ -52,38 +51,12 @@
         <p>{{ form.file }}</p>
     <input type="submit">
     </form>
-    {% if name %}
-        {{ name }}
-    {% endif %}
         {% if form.non_field_errors|length != 0 %}
             <p>ERROR ! Verify these cases :</p>
             <p>{{ form.non_field_errors }}</p>
             {% endif %}
     {% else %}
-        <div id="container-form">
-        <p>File uploaded : {{ filename }}</p>
-        <p>Determine attribute of CSV Item:</p>
-        <form id="attr_form">
-            {{ formset.management_form }}
-            {% csrf_token %}
-            <table>
-            {% for form in formset %}
-                <tr><td>{{ form.attribute.label }} n° {{ forloop.counter }}
-                {% if forloop.counter0 == 0 %}
-                    (Identify the item to modify)
-                {% endif %}</td>
-                <td>{{ form.attribute }}</td></tr>
-            {% endfor%}
-            {{ file_form.filename.as_hidden }}
-            <tr><td>{{ file_form.ignore_first_line.label }}</td>
-            <td>{{ file_form.ignore_first_line }}</td>
-            </tr>
-            </table>
-
-        <input type="button" id="attr_form_button" value="Test!">
-        </form>
-        </div>
-    <div id="progress" style="display: none;" class="progress progress-striped active">
+       <div id="progress" class="progress progress-striped active">
       <div class="bar"></div>
     </div>
     {% endif %}
@@ -99,14 +72,16 @@
 
 	    var attr_id = "";
 
-            $('#attr_form_button').on('click', function () {
+            $(function () {
                 $('#error').remove();
                 $.ajax({
                     url: "{% url "admin:telemeta-items-csv-apply" %}",
                     type: 'POST',
-                    data: $('#attr_form').serialize(),
+                    data: {
+                        csrfmiddlewaretoken : "{{ csrf_token }}",
+                        filename: "{{ filename }}"
+                    },
                     success: function (data) {
-			            attr_id = $('#id_form-0-attribute').val();
                         $('#container-form').replaceWith("<div id='state_generate'></div>");
                         $('#progress').show().after("<ul id='error'></ul>");
                         progress_generate(data.task_id);
@@ -115,9 +90,6 @@
                         404: function () {
                             $('#attr_form').after("<em id='error'>An error occurs</em>");
                         },
-                        400: function () {
-                            $('#attr_form').after("<em id='error'>duplicated attribute detected<br/> (identity attribute excluded)</em>");
-                        }
                     }
                 });
             });
@@ -128,53 +100,7 @@
             var current_corr = null;
             var current_actual_values = null;
 
-
-            function new_correction(){
-                if(total==0){
-                    total = Object.keys(item_errors).length;
-                }
-                $('#form_correct p, #form_correct .errorlist').remove();
-		        var first_key = Object.keys(item_errors)[0];
-                current_corr = [first_key, item_errors[first_key]];
-                delete item_errors[first_key];
-		        $.ajax({
-			        url: "{% url 'admin:telemeta-items-csv-correction' %}",
-                    type: 'POST',
-			        data : {
-				        'item': current_corr[0],
-				        'attribute': attr_id,
-                        'val_csv': JSON.stringify(current_corr[1]),
-                        'csrfmiddlewaretoken': "{{ csrf_token }}"
-			        },
-			        success: function(data){
-				        $('#form_correct').prepend(data.form);
-                        current_actual_values = data.actual_values;
-                        setActualValues();
-                        $('#state_generate').text('Item '+counter+'/'+total);
-			        }
-		        });
-	        }
-
-            function apply_correction(){
-                $.ajax({
-                    url :"{% url "admin:telemeta-items-csv-correction-apply" %}",
-                    data: get_data_apply_correction(),
-                    type: 'POST',
-                    statusCode : {
-                        200: function (data) {
-                            $('#form_correct p, #form_correct .errorlist').remove();
-                            $('#form_correct').prepend(data);
-                            setActualValues();
-                        },
-                        201: function () {
-                            setProgressCorrection();
-                            if(Object.keys(item_errors).length!=0){
-                                new_correction();
-                            }
-                        }
-                    }
-                })
-            }
+            var current_err = "";
 
             function progress_generate(task_id){
                 $.ajax({
@@ -186,13 +112,11 @@
                         if(data.status != "SUCCESS" && data.status !="FAILURE"){
                             current_item+=data.item;
                             restart = true;
-                            var len_fields_csv = (data.prec_error.length != 0) ? Object.keys(data.prec_error[2]).length : 0;
-                            if(data.prec_error.length != 0 &&
-                                    ($.inArray(data.prec_error[0], Object.keys(item_errors)) == -1
-                                            || (len_fields_csv != 0 && Object.keys(item_errors[data.prec_error[0]]).length==0))){
+                            var str_error = data.prec_error[0]+"|"+data.prec_error[1];
+                            if(data.prec_error.length != 0 && current_err != str_error){
                                 $('#error').append('<li>Error for item '+data.prec_error[0]+' : '+data.prec_error[1]+'</li>').
                                    scrollTop($('#error li:last').offset().top);
-                                item_errors[data.prec_error[0]] = data.prec_error[2]
+                                current_err = str_error;
                             }
                             $('.bar').text($('.bar').text()+" ( "+data.counter+"/"+data.total+" )");
                         }
@@ -201,34 +125,6 @@
                             $('#progress').removeClass("progress-striped active");
                             window.onbeforeunload = null;
                             $(window).off('unload');
-                            if(Object.keys(item_errors).length != 0){
-				$('#error').after('<a id="correction" class="btn btn-success" href="#"><i class="icon-plus-sign icon-white"></i> Correct errors</a>');
-			    	$('#correction').on('click', function(){
-					    $('.bar').text('').css('width', '0%');
-					    var form = "<form id='form_correct'>";
-					    form+="<input type='button' id='valid_correct' value='Correct this item' />";
-					    form+="</form>";
-                        var pass_button = '<a id= "pass" class="btn btn-danger"><i class="icon-minus-sign icon-white"></i> Pass</a>';
-					    form+=pass_button;
-                        $('#progress').addClass('progress-striped active').after(form);
-					    $('#correction, #error').remove();
-                        $('#valid_correct').on('click', apply_correction);
-                        $('#pass').on('click', function () {
-                            counter--;
-                            total--;
-                            setProgressCorrection();
-                            if (counter!=0){
-                                new_correction();
-
-                            }
-                        });
-                        $('#form_correct').on('click', '.old_val', function () {
-                            $(this).parent().prevAll('input').val($(this).text());
-                            $(this).parent().prevAll('select').val($('option:contains('+$(this).text()+')').val());
-                        });
-                        new_correction();
-				    });
-			    }
                         }
                         $('#state_generate').text(current_item);
                         if(restart){
@@ -237,43 +133,6 @@
                     }
                 });
             }
-
-            function setProgressCorrection(){
-                if(Object.keys(item_errors).length!=0){
-                    var percent = counter/total*100;
-                    $('.bar').css('width', percent.toFixed(0)+'%').text(percent.toFixed(1)+'%');
-                    counter++;
-                }
-                else{
-                    $('#form_correct').remove();
-                    $('#pass').remove();
-                    $('.bar').css('width', '100%').text('100%');
-                    $('#progress').removeClass("progress-striped active");
-                    $('#state_generate').text('Item : Finish');
-                }
-            }
-
-
-            function setActualValues(){
-                $(current_actual_values).each(function (i, v) {
-                    $("#form_correct p").eq(i).append('<br/><span class="text-success">Actual value :<span class="old_val">'+((v != "")?v:"Aucune")+'<i class="icon-arrow-up"></i></span></span>')
-                });
-                if(current_actual_values.length==0){
-                    $("#form_correct p").each(function (i, e) {
-                        $(e).append('<br/><span class="text-success">Actual value : Aucune</span>');
-                    });
-                }
-            }
-        
-            function get_data_apply_correction() {
-                var data = $('#form_correct').serialize()+"&attribute="+
-                        attr_id+"&csrfmiddlewaretoken={{ csrf_token }}";
-                if(attr_id+"_id" in current_corr[1]){
-                    data+="&"+attr_id+"_id="+current_corr[1][attr_id+"_id"];
-                }
-                return data;
-            }
-
 
         </script>
 
